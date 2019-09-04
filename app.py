@@ -49,11 +49,10 @@ def make_celery(app):
     return celery
 
 celery = make_celery(app)
-#celery = Celery("fulfilio-tasks", broker=app.config['CELERY_BROKER_URL'])
-#celery.conf.update(app.config)
 
 app.config["REDIS_URL"] = "redis://localhost:6379/0"
 app.register_blueprint(sse, url_prefix='/stream')
+
 
 @celery.task(bind=True)
 def insert_task(self, filename):
@@ -96,6 +95,61 @@ def upload_file():
         f.save(f.filename)
         task = insert_task.delay(f.filename)
         return render_template("upload.html")
+
+
+@app.route('/products', methods=['GET', 'POST'])
+def products():
+    cursor = request.args.get("cursor")
+    sku =  request.args.get("sku")
+    name =  request.args.get("name")
+    description =  request.args.get("description")
+    is_active =  request.args.get("is_active")
+    sku = "" if sku == "None" else sku
+    name = "" if name == "None" else name
+    description= "" if description == "None" else description
+    is_active= "" if is_active == "None" else is_active
+    print sku, name, description, is_active
+    if not cursor:
+        cursor = 0
+    else:
+        cursor = int(cursor)
+    count = 10
+    query = sess.query(Product)
+    if sku and len(sku) > 0:
+        query = query.filter(Product.sku==sku.strip())
+    if name and len(name) > 0:
+        query = query.filter(Product.name.ilike('%'+ name.strip() + '%'))
+    if description and len(description) > 0:
+        query = query.filter(Product.description.ilike('%'+ description.strip() + '%'))
+    if is_active and len(is_active) > 0:
+        if is_active == "Active":
+            query = query.filter(Product.is_active==True)
+        elif is_active == "Inactive":
+            query = query.filter(Product.is_active==False)
+    total = query.count()
+    print total
+    lines= []
+    for instance in query.limit(count).offset(cursor):
+        data = {"sku": instance.sku, "name": instance.name, "description": instance.description, "is_active": str(instance.is_active)}
+        lines.append(data)
+    params = { "cursor": "0", "sku": sku, "name": name, "description": description, "is_active": is_active }
+    firstParams = urllib.urlencode(params)
+    prevParams = None
+    nextParams = None
+    lastParams = None
+    if not cursor == 0:
+        cursorStr =  str(cursor - count)
+        params = { "cursor": cursorStr, "sku": sku, "name": name, "description": description, "is_active": is_active }
+        prevParams = urllib.urlencode(params)
+    pageNav = str(cursor / count + 1) + " / " + str(total / count + 1)
+    if not cursor >= total - count:
+        cursorStr =  str(cursor + count)
+        params = { "cursor": cursorStr, "sku": sku, "name": name, "description": description, "is_active": is_active }
+        nextParams = urllib.urlencode(params)
+    cursorStr =  str(total / count * count)
+    params = { "cursor": cursorStr, "sku": sku, "name": name, "description": description, "is_active": is_active }
+    lastParams = urllib.urlencode(params)
+    return render_template("products.html", lines=lines, firstParams=firstParams, prevParams=prevParams, pageNav=pageNav, nextParams=nextParams, lastParams=lastParams, total=total)
 
 
 if __name__ == '__main__':

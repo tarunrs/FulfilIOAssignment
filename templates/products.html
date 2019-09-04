@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <form method=GET action=/products>
+         SKU: <input type=text name=sku> </input>
+         Name: <input type=text name=name></input>
+         Description:<input type=text name=description></input>
+         <select name=is_active>
+            <option>Active</option> 
+            <option> Inactive</option>
+            <option selected=True>All</option>
+        </select>
+        <input type=submit name=Search></input>
+    </form>
+    {% if total %}
+        <table>
+            {% for instance in lines %}
+            <tr>
+                <form action=/edit method=GET>
+                    <input type=hidden name=sku value= {{ instance.sku }} />
+                    <td width=10%> {{ instance.sku}} </td>
+                    <td width=10%> {{ instance.name }} </td>
+                    <td> {{ instance.description }}</td>
+                    <td> {{ instance.is_active }}</td>
+                    <td> 
+                        <input type=submit value=Edit />
+                    </td>
+                </form>
+            </tr>
+            {% endfor %}
+        </table>
+        <table>
+            <tr>
+                <td>
+                    <a href=/products?{{ firstParams }}> First </a>
+                </td>
+                <td>
+                    {% if prevParams %}
+                        <a href=/products?{{ prevParams }}> Prev </a>
+                    {% endif %}
+                </td>
+                <td> {{pageNav}} </td>
+                <td>
+                    {% if nextParams %}
+                        <a href=/products?{{ nextParams }}> Next </a>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href=/products?{{ lastParams }}> Last</a>
+                </td>
+            </tr>
+        </table>
+    {% else %}
+        No records found
+    {% endif %}
+{% endblock %}
