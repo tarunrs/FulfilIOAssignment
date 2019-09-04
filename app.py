@@ -154,13 +154,11 @@ def products():
 def edit_record():
     if request.method == 'GET':
         sku = request.args.get("sku")
-        print sku
         query = sess.query(Product)
         prod = query.filter(Product.sku==sku.strip()).one()
         return render_template("edit.html", sku=prod.sku, name=prod.name, description=prod.description, is_active=prod.is_active)
     else:
         sku = request.form.get("sku")
-        print sku
         name = request.form.get("name")
         description = request.form.get("description")
         is_active= request.form.get("is_active")
@@ -169,6 +167,24 @@ def edit_record():
         sess.merge(prod)
         sess.commit()
         return render_template("edit.html", post=True)
+
+
+@app.route('/add', methods = ['GET',  'POST'])
+def add_record():
+    if request.method == 'POST':
+        sku = request.form.get("sku")
+        name = request.form.get("name")
+        description = request.form.get("description")
+        is_active= request.form.get("is_active")
+        is_active = True if is_active == "Active" else False
+        try:
+            prod = Product(sku=sku, name=name, description=description, is_active=is_active)
+            sess.merge(prod)
+            sess.commit()
+            return render_template("add.html", error=False, post=True)
+        except Exception as e:
+            return render_template("add.html", error=True, post=True)
+    return render_template("add.html")
 
 if __name__ == '__main__':
     app.run(debug=True)
