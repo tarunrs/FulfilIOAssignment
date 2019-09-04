@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <form action = "/edit" method = "POST">
+    	{% if error %}
+    		Error editing record
+    	{% elif  post %}
+    		Record edited successfully
+    	{% else %}
+	    	SKU: <input type=text name=sku value="{{sku}}" readonly> </input> <br>
+	        Name: <input type=text name=name value="{{name}}">  </input> <br>
+	        Description:<input type=text name=description value="{{description}}"> </input><br>
+	        <select name=is_active>
+	        	{% if is_active %}
+	            	<option selected=True>Active</option> 
+	            	<option> Inactive</option>
+	            {% else %}
+	            	<option>Active</option> 
+	            	<option selected=True> Inactive</option>
+	            {% endif %}
+	        </select><br>
+		    <input type = "submit"/>
+	     {% endif %}
+    </form>
+{% endblock %}
