@@ -22,7 +22,6 @@ engine = create_engine('postgresql://fulfilio:fulfilio@localhost:5432/fulfilio')
 Session = sessionmaker()
 Session.configure(bind=engine)
 sess = Session()
-Base = declarative_base()
 
 log = logging.getLogger('fulfilio')
 
@@ -198,7 +197,7 @@ def delete_db():
                 return render_template("delete.html", confirmation=confirmation)
             except Exception as e:
                 return render_template("delete.html", error="true")
-    return render_template("delete.html"
+    return render_template("delete.html")
 
 
 if __name__ == '__main__':
