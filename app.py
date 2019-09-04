@@ -108,7 +108,6 @@ def products():
     name = "" if name == "None" else name
     description= "" if description == "None" else description
     is_active= "" if is_active == "None" else is_active
-    print sku, name, description, is_active
     if not cursor:
         cursor = 0
     else:
@@ -127,7 +126,6 @@ def products():
         elif is_active == "Inactive":
             query = query.filter(Product.is_active==False)
     total = query.count()
-    print total
     lines= []
     for instance in query.limit(count).offset(cursor):
         data = {"sku": instance.sku, "name": instance.name, "description": instance.description, "is_active": str(instance.is_active)}
