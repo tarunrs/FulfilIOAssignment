@@ -1,0 +1,29 @@
+<html>
+    <head>
+      <title>Fulfil.IO ASsignment</title>
+      </head>
+    <body>
+        <div> 
+          <a href="/">Upload</a> | 
+          <a href="/delete">Delete Database</a> | 
+          <a href="/add">Add Record</a> | 
+          <a href="/webhooks">Configure Webhooks</a> |
+          <a href="/products">View Products</a> | 
+          <span name="notifications" id="notifications"> </span>
+          <br>
+        </div>
+        <div>
+        {% block content %}{% endblock %}
+      </div>
+    </body>
+      <script>
+      var source = new EventSource("{{ url_for('sse.stream') }}");
+    source.addEventListener('greeting', function(event) {
+        var data = JSON.parse(event.data);
+        document.getElementById("notifications").innerHTML = data.message;
+    }, false);
+    source.addEventListener('error', function(event) {
+        document.getElementById("notifications").innerHTML = "Failed to connect to event stream. Is Redis running?";
+    }, false);
+      </script>
+</html>
