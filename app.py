@@ -186,5 +186,20 @@ def add_record():
             return render_template("add.html", error=True, post=True)
     return render_template("add.html")
 
+
+@app.route('/delete', methods = ['GET',  'POST'])
+def delete_db():
+    if request.method == 'POST':
+        confirmation = request.form.get("confirmation")
+        if confirmation == "yes":
+            try:
+                sess.query(Product).delete()
+                sess.commit()
+                return render_template("delete.html", confirmation=confirmation)
+            except Exception as e:
+                return render_template("delete.html", error="true")
+    return render_template("delete.html"
+
+
 if __name__ == '__main__':
     app.run(debug=True)

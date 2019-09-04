@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <form action = "/delete" method = "POST">
+    	{% if error %}
+    		Error deleting database
+    	{% elif  confirmation %}
+    		Database deleted
+    	{% else %}
+	    	Are you sure you want to delete the database? <br>
+	        <input type="radio" name="confirmation" value="yes"> Yes
+	  		<input type="radio" name="confirmation" value="no" checked> No<br>
+	        <input type = "submit"/>
+	     {% endif %}
+    </form>
+{% endblock %}
