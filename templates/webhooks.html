@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <form action = "/webhooks" method = "POST">
+    	{% if  post %}
+    		Webhooks added successfully
+    	{% else %}
+	    	Add Webhook: <input type=text name=add_webhook> </input> <br>
+	        Edit Webhook: <input type=text name=edit_webhook>  </input> <br>
+		    <input type = "submit"/>
+	     {% endif %}
+    </form>
+{% endblock %}

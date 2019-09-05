@@ -16,6 +16,7 @@ import random
 import urllib
 from flask_sse import sse
 from models import *
+import requests
 
 engine = create_engine('postgresql://fulfilio:fulfilio@localhost:5432/fulfilio')
 
@@ -54,6 +55,13 @@ app.register_blueprint(sse, url_prefix='/stream')
 
 
 @celery.task(bind=True)
+def webhook_task(self, filename, params):
+    print filename, params
+    webhook = open(filename, "r").read()
+    requests.post(webhook, params=params)
+    return
+
+@celery.task(bind=True)
 def insert_task(self, filename):
     engine = create_engine('postgresql://fulfilio:fulfilio@localhost:5432/fulfilio')
     Session = sessionmaker()
@@ -75,10 +83,9 @@ def insert_task(self, filename):
         sess.commit()
         if i % 100 == 0:
             sse.publish({"message": "Processed "+ str(i) + " of " + str(total) + " records"}, type='greeting')
-        self.update_state(state='PROGRESS',
-                          meta={'current': i, 'total': total,
-                                'status': "Processing"})
         i += 1
+
+    sse.publish({"message": "Inserted all records"}, type='greeting')
     return 
 
 
@@ -165,6 +172,8 @@ def edit_record():
         prod = Product(sku=sku, name=name, description=description, is_active=is_active)
         sess.merge(prod)
         sess.commit()
+        params = {"sku": sku, "name": name, "description": description, "is_active": is_active}
+        webhook_task.delay("edit_webhook", params)
         return render_template("edit.html", post=True)
 
 
@@ -180,6 +189,8 @@ def add_record():
             prod = Product(sku=sku, name=name, description=description, is_active=is_active)
             sess.merge(prod)
             sess.commit()
+            params = {"sku": sku, "name": name, "description": description, "is_active": is_active}
+            webhook_task.delay("add_webhook", params)
             return render_template("add.html", error=False, post=True)
         except Exception as e:
             return render_template("add.html", error=True, post=True)
@@ -199,6 +210,18 @@ def delete_db():
                 return render_template("delete.html", error="true")
     return render_template("delete.html")
 
+
+@app.route('/webhooks', methods = ['GET',  'POST'])
+def webhooks():
+    if request.method == 'POST':
+        add_webhook = request.form.get("add_webhook")
+        edit_webhook = request.form.get("edit_webhook")
+        with open("add_webhook", "w") as f:
+            f.write(add_webhook.strip())
+        with open("edit_webhook", "w") as f:
+            f.write(edit_webhook.strip())
+        return render_template("webhooks.html", post=True)
+    return render_template("webhooks.html")
 
 if __name__ == '__main__':
     app.run(debug=True)
