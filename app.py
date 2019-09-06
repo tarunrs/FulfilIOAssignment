@@ -17,6 +17,8 @@ import urllib
 from flask_sse import sse
 from models import *
 import requests
+import boto3, json
+
 
 engine = create_engine('postgresql://fulfilio:fulfilio@localhost:5432/fulfilio')
 
@@ -63,6 +65,10 @@ def webhook_task(self, filename, params):
 
 @celery.task(bind=True)
 def insert_task(self, filename):
+    s3 = boto3.client('s3', region_name='ap-south-1')
+    sse.publish({"message": "Downloading file"}, type='greeting')
+    s3.download_file('fulfilio', filename, filename)
+    sse.publish({"message": "Downloaded file"}, type='greeting')
     engine = create_engine('postgresql://fulfilio:fulfilio@localhost:5432/fulfilio')
     Session = sessionmaker()
     Session.configure(bind=engine)
@@ -94,12 +100,12 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/uploader', methods = ['GET', 'POST'])
-def upload_file():
+@app.route('/uploaded_file', methods = ['POST'])
+def uploaded_file():
     if request.method == 'POST':
-        f = request.files['file']
-        f.save(f.filename)
-        task = insert_task.delay(f.filename)
+        name = request.args.get['name']
+        task = insert_task.delay(name)
+        sse.publish({"message": "Queing up processing task"}, type='greeting')
         return render_template("upload.html")
 
 
@@ -222,6 +228,38 @@ def webhooks():
             f.write(edit_webhook.strip())
         return render_template("webhooks.html", post=True)
     return render_template("webhooks.html")
+
+
+@app.route('/sign-s3/')
+def sign_s3():
+  # Load necessary information into the application
+  S3_BUCKET = os.environ.get('S3_BUCKET')
+
+  # Load required data from the request
+  file_name = request.args.get('file-name')
+  file_type = request.args.get('file-type')
+
+  # Initialise the S3 client
+  s3 = boto3.client('s3', region_name='ap-south-1')
+
+  # Generate and return the presigned URL
+  presigned_post = s3.generate_presigned_post(
+    Bucket = S3_BUCKET,
+    Key = file_name,
+    Fields = {"acl": "public-read", "Content-Type": file_type},
+    Conditions = [
+      {"acl": "public-read"},
+      {"Content-Type": file_type}
+    ],
+    ExpiresIn = 3600
+  )
+
+  # Return the data to the client
+  return json.dumps({
+    'data': presigned_post,
+    'url': 'https://%s.s3.amazonaws.com/%s' % (S3_BUCKET, file_name)
+  })
+
 
 if __name__ == '__main__':
     app.run(debug=True)
