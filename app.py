@@ -25,8 +25,8 @@ engine = create_engine('postgresql://fulfilio:fulfilio@localhost:5432/fulfilio')
 Session = sessionmaker()
 Session.configure(bind=engine)
 sess = Session()
-
-log = logging.getLogger('fulfilio')
+logging.basicConfig(filename="fulfilio.log")
+logger = logging.getLogger('fulfilio')
 
 app = Flask(__name__)
 
@@ -102,11 +102,10 @@ def index():
 
 @app.route('/uploaded_file', methods = ['POST'])
 def uploaded_file():
-    if request.method == 'POST':
-        name = request.args.get['name']
-        task = insert_task.delay(name)
-        sse.publish({"message": "Queing up processing task"}, type='greeting')
-        return render_template("upload.html")
+    name = request.args.get('name')
+    task = insert_task.delay(name)
+    sse.publish({"message": "Queing up processing task"}, type='greeting')
+    return
 
 
 @app.route('/products', methods=['GET', 'POST'])
